@@ -19,6 +19,7 @@ namespace FormAutomationApi.Controllers
         public async Task<IActionResult> GetPatients()
         {
             var patients = await _dbContext.Patients.ToListAsync();
+           //var documentTypes = await _dbContext.Patients.ToListAsync();
             return Ok(patients);
         }
 
