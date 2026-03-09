@@ -33,5 +33,18 @@ namespace FormAutomationApi.Controllers
 
             return Ok(patient);
         }
+
+        //
+        [HttpPost("/")]
+        public async Task<IActionResult> PostEmail(Patient patient)
+        {
+            if (patient == null)
+                return BadRequest("Email is required");
+            
+     
+            var newPatient = await _dbContext.Patients.AddAsync(patient);
+            await _dbContext.SaveChangesAsync();
+            return Ok(newPatient);
+        }
     }
 }
