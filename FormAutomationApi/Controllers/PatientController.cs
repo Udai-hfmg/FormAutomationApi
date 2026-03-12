@@ -31,6 +31,8 @@ namespace FormAutomationApi.Controllers
             if (patient == null)
                 return NotFound();
 
+            
+
             return Ok(patient);
         }
 
