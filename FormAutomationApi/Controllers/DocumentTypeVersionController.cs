@@ -19,8 +19,10 @@ namespace FormAutomationApi.Controllers
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            var versions = await _dbContext.DocumentVersions.ToListAsync();
-            return Ok(versions);
+            var documentVersions = _dbContext.DocumentVersions
+    .Include(dv => dv.DocumentType)
+    .ToList();
+            return Ok(documentVersions);
         }
 
         [HttpPost]
