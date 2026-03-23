@@ -1,5 +1,4 @@
-﻿using FormAutomationApi.Services;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 
 namespace FormAutomationApi.Controllers
 {
@@ -8,9 +7,9 @@ namespace FormAutomationApi.Controllers
     public class FileController : Controller
     {
 
-        private readonly AIService _aiSerivce;
+        private readonly AiService _aiSerivce;
 
-        public FileController(AIService aiService)
+        public FileController(AiService aiService)
         {
             _aiSerivce = aiService;
         }
@@ -24,7 +23,7 @@ namespace FormAutomationApi.Controllers
         [HttpPost("create-template")]
         public async Task<IActionResult> Post(IFormFile file)
         {
-            if (file == null && file.Length == 0)
+            if (file == null || file.Length == 0)
                 return BadRequest("No file uploaded");
 
 
@@ -33,7 +32,7 @@ namespace FormAutomationApi.Controllers
 
             var base64 = Convert.ToBase64String(ms.ToArray());
 
-            var template = await _aiSerivce.AnaylseForm(base64);
+            var template = await _aiSerivce.ExtractTemplate(ms.ToArray());
 
             return Ok(new { template });
         }
