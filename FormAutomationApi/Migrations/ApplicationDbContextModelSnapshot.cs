@@ -22,6 +22,234 @@ namespace FormAutomationApi.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
+            modelBuilder.Entity("FormAutomationApi.Model.DocumentType", b =>
+                {
+                    b.Property<int>("DocumentTypeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("DocumentTypeId"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("DocumentTypeId");
+
+                    b.ToTable("documenttype", (string)null);
+                });
+
+            modelBuilder.Entity("FormAutomationApi.Model.DocumentVersion", b =>
+                {
+                    b.Property<int>("DocumentVersionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("DocumentVersionId"));
+
+                    b.Property<int>("DocumentTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("EffectiveDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("RetiredDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("TemplatePath")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("VersionLabel")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("DocumentVersionId");
+
+                    b.HasIndex("DocumentTypeId");
+
+                    b.ToTable("documentversion", (string)null);
+                });
+
+            modelBuilder.Entity("FormAutomationApi.Model.EmergencyContact", b =>
+                {
+                    b.Property<int>("EmergencyContactId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("EmergencyContactId"));
+
+                    b.Property<string>("ContactName")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("IsPrimary")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PatientId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Relationship")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("EmergencyContactId");
+
+                    b.ToTable("emergencycontact", (string)null);
+                });
+
+            modelBuilder.Entity("FormAutomationApi.Model.HipaaFamilyMember", b =>
+                {
+                    b.Property<int>("HipaaFamilyMemberId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("HipaaFamilyMemberId"));
+
+                    b.Property<string>("FamilyNumberName")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Relationship")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("SignedDocumentId")
+                        .HasColumnType("int");
+
+                    b.HasKey("HipaaFamilyMemberId");
+
+                    b.ToTable("hipaafamilymember", (string)null);
+                });
+
+            modelBuilder.Entity("FormAutomationApi.Model.InsurancePlan", b =>
+                {
+                    b.Property<int>("InsurancePlanId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("InsurancePlanId"));
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("PayerName")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("PlanName")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("InsurancePlanId");
+
+                    b.ToTable("insuranceplan", (string)null);
+                });
+
+            modelBuilder.Entity("FormAutomationApi.Model.IntakePacket", b =>
+                {
+                    b.Property<int>("IntakePacketId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("IntakePacketId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("LocationName")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("OfficeId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("PackedDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("PatientId")
+                        .HasColumnType("int");
+
+                    b.HasKey("IntakePacketId");
+
+                    b.ToTable("intakeplan", (string)null);
+                });
+
+            modelBuilder.Entity("Office", b =>
+                {
+                    b.Property<int>("OfficeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("OfficeId"));
+
+                    b.Property<string>("AddressLine1")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("AddressLine2")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("City")
+                        .HasColumnType("longtext");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("OfficeName")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Phone")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("State")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("ZipCode")
+                        .HasColumnType("longtext");
+
+                    b.HasKey("OfficeId");
+
+                    b.ToTable("office", (string)null);
+                });
+
+            modelBuilder.Entity("OfficeDocumentRequirement", b =>
+                {
+                    b.Property<int>("DocumentTypeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("DocumentTypeId"));
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("OfficeId")
+                        .HasColumnType("int");
+
+                    b.HasKey("DocumentTypeId");
+
+                    b.HasIndex("OfficeId");
+
+                    b.ToTable("officedocumentrequirement", (string)null);
+                });
+
+
+
             modelBuilder.Entity("Patient", b =>
                 {
                     b.Property<int>("PatientId")
