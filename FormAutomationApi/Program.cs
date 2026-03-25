@@ -1,5 +1,6 @@
 using FormAutomationApi.Context;
 using FormAutomationApi.Model;
+using FormAutomationApi.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,7 +18,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(builder.Configuration.GetConnectionString("DefaultString"), ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultString")))
 );
 builder.Services.AddScoped<AiService>();
-
+builder.Services.AddScoped<ITokenService, JWTTokenService>();
 
 builder.Services.AddCors(options =>
 {

@@ -40,7 +40,9 @@ namespace FormAutomationApi.Context
 
         public DbSet<SignedDocumentResponse> SignedDocumentsResponse { get; set; }  
 
-        public DbSet<UnableToObtainSignature> unableToObtainSignatures { get; set; }    
+        public DbSet<UnableToObtainSignature> unableToObtainSignatures { get; set; }
+
+        public DbSet<FormSubmission> FormSubmissions { get; set; } 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Patient>().ToTable("patient");
@@ -51,7 +53,7 @@ namespace FormAutomationApi.Context
 
             modelBuilder.Entity<EmergencyContact>().ToTable("emergencycontact");
 
-            modelBuilder.Entity<HippaFamilyMember>().ToTable("hippafamilymember");
+            modelBuilder.Entity<HippaFamilyMember>().ToTable("hipaafamilymember");
 
             modelBuilder.Entity<InsurancePlan>().ToTable("insuranceplan");
 
@@ -78,6 +80,8 @@ namespace FormAutomationApi.Context
             modelBuilder.Entity<SignedDocumentResponse>().ToTable("signeddocumentresponse");
 
             modelBuilder.Entity<UnableToObtainSignature>().ToTable("unabletoobtainsignature");
+
+            modelBuilder.Entity<FormSubmission>().ToTable("formsubmissions");
         }
     }
 }
