@@ -1,8 +1,9 @@
 using FormAutomationApi.Context;
 using FormAutomationApi.Model;
-using FormAutomationApi.Services;
 using Microsoft.EntityFrameworkCore;
+using DotNetEnv;
 
+Env.Load();
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -17,7 +18,8 @@ builder.Services.Configure<OpenAISettings>(builder.Configuration.GetSection("Ope
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(builder.Configuration.GetConnectionString("DefaultString"), ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultString")))
 );
-builder.Services.AddScoped<AIService>();
+builder.Services.AddScoped<AiService>();
+
 
 builder.Services.AddCors(options =>
 {
@@ -28,7 +30,7 @@ builder.Services.AddCors(options =>
         .AllowAnyMethod();
     });
 });
-
+builder.Services.AddSingleton<TwilioService>();
 var app = builder.Build();
 
 

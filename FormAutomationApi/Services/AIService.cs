@@ -1,142 +1,81 @@
-﻿using FormAutomationApi.Model;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.Extensions.Options;
+﻿using Newtonsoft.Json;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 
-namespace FormAutomationApi.Services
+public class AiService
 {
-    public class AIService
+    private readonly IConfiguration _config;
+    private readonly HttpClient _http;
+
+    public AiService(IConfiguration config)
     {
-        private readonly string _apiKey;
-        private readonly HttpClient _httpClient;
-
-        public AIService(IOptions<OpenAISettings> settings)
-        {
-            _apiKey = settings.Value.ApiKey;
-            _httpClient = new HttpClient();
-        }
-
-        public async Task<string> AnaylseForm(string base64File) {
-            //            var request = new
-            //            {
-            //                model = "gpt-4o-mini",
-            //                messages = new[]
-            //           {
-            //                new
-            //                {
-            //                    role = "system",
-            //                    content = "You are a medical form parser."
-            //                },
-            //                new
-            //                {
-            //                    role = "user",
-            //                    content = $@"
-            //Analyze this hospital form image or document.
-
-            //Extract all form fields and convert them into this template format:
-
-            //Example:
-            //First Name {{first_name:text:req}}
-            //DOB {{dob:date:req}}
-
-            //Rules:
-            //- field types: text, date, number, tel, checkbox
-            //- req = required
-            //- opt = optional
-
-            //FileBase64:
-            // url = $""data:image/png;base64,{{base64Image}}""
-            //"
-            //                }
-            //            }
-            //            };
-
-            var request = new
-            {
-                model = "gpt-4o",
-                response_format = new { type = "json_object" },
-                messages = new object[]
-     {
-        new
-        {
-            role = "user",
-            content = new object[]
-            {
-                new
-                {
-                    type = "text",
-                    text =
-@"Analyze this hospital form image.
-
-1. Detect all form fields.
-2. Generate a template format.
-3. Also return a structured list of fields.
-
-Template format example:
-First Name {{first_name:text:req}}
-DOB {{dob:date:req}}
-
-Rules:
-field types: text, date, number, tel, checkbox
-req = required
-opt = optional
-
-Return JSON in this format:
-
-{
-  ""template"": ""string"",
-  ""fields"": [
-    {
-      ""label"": ""First Name"",
-      ""name"": ""first_name"",
-      ""type"": ""text"",
-      ""required"": true
+        _config = config;
+        _http = new HttpClient();
+        _http.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _config["OpenAI:ApiKey"]);
     }
-  ]
-}"
-                },
-                new
-                {
-                    type = "image_url",
-                    image_url = new
+
+    public async Task<string> ExtractTemplate(byte[] fileBytes)
+    {
+        string base64 = Convert.ToBase64String(fileBytes);
+
+        var requestBody = new
+        {
+            model = "gpt-4o-mini",
+            messages = new[]
+            {
+                new {
+                    role = "user",
+                    content = new object[]
                     {
-                        url = $"data:image/png;base64,{base64File}"
+                        new { type="text", text="Reconstruct the document exactly.\r\n\r\nDetect form fields in two ways:\r\n\r\n1) Visual blanks such as:\r\n- ______\r\n- long underline blanks\r\n- empty boxes\r\n- empty space after labels\r\n\r\n2) Sentences asking the user to provide information.\r\n\r\nReplace the blank directly with a template variable.\r\n\r\nTemplate format:\r\n{{fieldName:type:req}}\r\n\r\nRules:\r\n- Replace the blank in the SAME LINE.\r\n- DO NOT add new lines.\r\n- DO NOT use arrows (→).\r\n- DO NOT show both the blank and the template.\r\n- The template MUST replace the blank.\r\n\r\nExample conversions:\r\n\r\nFirst Name: ______\r\n→ First Name: {{firstName:text:req}}\r\n\r\nPhone Number: ______\r\n→ Phone Number: {{phoneNumber:phone:req}}\r\n\r\nEmail: ______\r\n→ Email: {{email:email:req}}\r\n\r\nDate of Birth: ______\r\n→ Date of Birth: {{dateOfBirth:date:req}}\r\n\r\nAllowed types:\r\ntext\r\nemail\r\nphone\r\ndate\r\nnumber\r\ncheckbox\r\n\r\nRequired flag:\r\nreq = required\r\nopt = optional\r\n\r\nField naming rules:\r\nEmail → email\r\nPhone Number → phoneNumber\r\nFirst Name → firstName\r\nLast Name → lastName\r\nZip Code → zipCode\r\nDate of Birth → dateOfBirth\r\n\r\nIMPORTANT:\r\n- Preserve the original document text exactly.\r\n- Only replace blanks.\r\n- Do not add explanations.\r\n- Do not include arrows.\r\n- Do not repeat the template on a new line.\r\n\r\nReturn ONLY the reconstructed template."},
+                        new { type="image_url", image_url = new { url = $"data:image/png;base64,{base64}" } }
                     }
                 }
             }
-        }
-     }
-            };
+        };
 
-            _httpClient.DefaultRequestHeaders.Clear();
-            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_apiKey}");
+        var content = new StringContent(
+            JsonConvert.SerializeObject(requestBody),
+            Encoding.UTF8,
+            "application/json"
+        );
 
-            var response = await _httpClient.PostAsJsonAsync(
-                "https://api.openai.com/v1/chat/completions",
-                request
-            );
+        var response = await _http.PostAsync(
+            "https://api.openai.com/v1/chat/completions",
+            content
+        );
 
-            var result = await response.Content.ReadFromJsonAsync<dynamic>();
+        var result = await response.Content.ReadAsStringAsync();
 
-            Console.WriteLine(result );
-            return "console";
-        }
+        var json = JsonDocument.Parse(result);
 
+        var template = json
+            .RootElement
+            .GetProperty("choices")[0]
+            .GetProperty("message")
+            .GetProperty("content")
+            .GetString();
 
+        template = template
+            .Replace("```plaintext", "")
+            .Replace("```", "")
+            .Trim();
+
+        return template;
     }
+
+
 }
 
 
 public class OpenAIResponse
 {
-    public List<Choice> Choices { get; set; }
-}
-
-public class Choice
-{
-    public Message Message { get; set; }
+    public Message message;
 }
 
 public class Message
 {
-    public string Content { get; set; }
+    public string content;
 }
