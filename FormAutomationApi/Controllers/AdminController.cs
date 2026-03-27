@@ -20,7 +20,15 @@ namespace FormAutomationApi.Controllers
             _tokenService = tokenService;
         }
 
-       
+        [HttpGet]
+        public async Task<IActionResult> Get()
+        {
+            var allfacilities = await _context.Offices.ToListAsync();
+            return Ok(allfacilities);
+
+        }
+
+
         // admin create session and sends the data
         [HttpPost("create-session")]
         public async Task<IActionResult> createSession(SendFormRequest body)

@@ -23,6 +23,6 @@ public class SignedDocument
     public int? DocumentVersionId { get; set; }         // INT, NULL (DocumentVer...)
 
     // Navigation properties
-    public IntakePacket IntakePacket { get; set; }
-    public DocumentType DocumentType { get; set; }
+    public IntakePacket? IntakePacket { get; set; }
+    public DocumentType? DocumentType { get; set; }
 }

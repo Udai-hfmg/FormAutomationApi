@@ -38,7 +38,7 @@ namespace FormAutomationApi.Context
 
         public DbSet<SignedDocument> SignedDocuments { get; set; }  
 
-        public DbSet<SignedDocumentResponse> SignedDocumentsResponse { get; set; }  
+        public DbSet<SignedDocumentResponse> SignedDocumentResponse { get; set; }  
 
         public DbSet<UnableToObtainSignature> UnableToObtainSignatures { get; set; }    
 
@@ -57,7 +57,7 @@ namespace FormAutomationApi.Context
 
             modelBuilder.Entity<InsurancePlan>().ToTable("insuranceplan");
 
-            modelBuilder.Entity<IntakePacket>().ToTable("intakeplan");
+            modelBuilder.Entity<IntakePacket>().ToTable("intakepacket");
 
             modelBuilder.Entity<Office>().ToTable("office");
 
@@ -81,7 +81,7 @@ namespace FormAutomationApi.Context
 
             modelBuilder.Entity<UnableToObtainSignature>().ToTable("unabletoobtainsignature");
 
-            modelBuilder.Entity<FormSubmission>().ToTable("formsubmissions");
+            //modelBuilder.Entity<FormSubmission>().ToTable("formsubmissions");
         }
     }
 }
