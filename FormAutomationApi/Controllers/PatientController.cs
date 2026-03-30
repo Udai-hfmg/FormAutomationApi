@@ -66,7 +66,6 @@ namespace FormAutomationApi.Controllers
         }
 
 
-        // POST api/patientform/submit
         [HttpPost("submit")]
         public async Task<IActionResult> Submit([FromBody] RequestFormSubmission request)
         {
@@ -74,10 +73,11 @@ namespace FormAutomationApi.Controllers
                 return BadRequest("Request body is required.");
 
             using var transaction = await _db.Database.BeginTransactionAsync();
+
             try
             {
-                // 1️⃣ Patient FIRST — need patientId for all sub-tables
                 var patientId = await UpsertPatientAsync(request.Patient);
+
                 await UpsertDemographicAsync(patientId, request.PatientDemographic);
                 await UpsertEmploymentAsync(patientId, request.PatientEmployment);
                 await UpsertPharmacyAsync(patientId, request.PatientPharmacy);
@@ -86,23 +86,42 @@ namespace FormAutomationApi.Controllers
                 await UpsertEmergencyContactAsync(patientId, request.EmergencyContact);
                 await UpsertProviderAsync(patientId, request.PatientProvider);
                 await UpsertHipaaAsync(patientId, request.HipaaFamilyMembers);
-                await UpsertSignedDocumentAsync(request.SignedDocument);
-                await UpsertIntakePacketAsync(patientId, request.IntakePacket);
+
+                // ✅ Intake
+                var intakeId = await UpsertIntakePacketAsync(patientId, request.IntakePacket);
+
+                if (intakeId == null)
+                    throw new Exception("IntakePacket creation failed");
+
+                // ✅ Signed Document    
+                var signedDocumentId = await UpsertSignedDocumentAsync(intakeId.Value, request.SignedDocument);
+
+                // ✅ Responses
+                if (request.SignedDocumentResponses != null)
+                {
+                    await UpsertSignedDocumentResponsesAsync(signedDocumentId, request.SignedDocumentResponses);
+                }
+
+                // ✅ Unable to sign
+                if (request.UnableToObtainSignature != null)
+                {
+                    await UpsertUnableToObtainSignatureAsync(signedDocumentId, request.UnableToObtainSignature);
+                }
 
                 await _db.SaveChangesAsync();
-
                 await transaction.CommitAsync();
+
                 return Ok(new { success = true, patientId });
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                return StatusCode(500, new { 
+                return StatusCode(500, new
+                {
                     error = ex.Message,
-                    inner = ex.InnerException?.Message,   // ← add this
+                    inner = ex.InnerException?.Message,
                     detail = ex.InnerException?.InnerException?.Message
                 });
-
             }
         }
 
@@ -297,7 +316,6 @@ namespace FormAutomationApi.Controllers
                 });
             }
 
-            await _db.SaveChangesAsync();
         }
 
 
@@ -328,7 +346,6 @@ namespace FormAutomationApi.Controllers
                 });
             }
 
-            await _db.SaveChangesAsync();
         }
 
 
@@ -360,7 +377,6 @@ namespace FormAutomationApi.Controllers
                 });
             }
 
-            await _db.SaveChangesAsync();
         }
 
 
@@ -392,7 +408,6 @@ namespace FormAutomationApi.Controllers
                 });
             }
 
-            await _db.SaveChangesAsync();
         }
 
 
@@ -427,106 +442,99 @@ namespace FormAutomationApi.Controllers
 
 
         // ── INTAKE PACKET ─────────────────────────────────────────────────────
-        private async Task UpsertIntakePacketAsync(int patientId, IntakePacket? dto)
+        private async Task<int?> UpsertIntakePacketAsync(int patientId, IntakePacket? dto)
         {
-            if (dto == null) return;
+            if (dto == null) return null;
 
-                var existing = await _db.IntakePackets.FindAsync(patientId);
-            if (existing!=null)                     // ← UPDATE
+            var existing = await _db.IntakePackets
+                .FirstOrDefaultAsync(x => x.PatientId == patientId);
+
+            if (existing != null)
             {
-
                 existing.PacketDate = dto.PacketDate;
                 existing.LocationName = dto.LocationName;
                 existing.OfficeId = dto.OfficeId;
+
+                return existing.IntakePacketId;
             }
-            else                                            // ← INSERT
+            else
             {
-                _db.IntakePackets.Add(new IntakePacket
+                var entity = new IntakePacket
                 {
                     PatientId = patientId,
                     PacketDate = dto.PacketDate,
                     LocationName = dto.LocationName,
                     OfficeId = dto.OfficeId,
                     CreatedAt = DateTime.UtcNow
-                });
-            }
+                };
 
-            await _db.SaveChangesAsync();
+                _db.IntakePackets.Add(entity);
+
+                return entity.IntakePacketId;
+            }
         }
 
 
         // ── SIGNED DOCUMENT ───────────────────────────────────────────────────
-        private async Task UpsertSignedDocumentAsync(SignedDocument dto)
+        private async Task<int> UpsertSignedDocumentAsync(int intakePacketId, SignedDocument dto)
         {
-            if (dto == null) return;
+            if (dto == null) throw new Exception("SignedDocument is required");
 
-                var existing = await _db.SignedDocuments.FindAsync(dto.SignedDocumentId);
-            if (dto.SignedDocumentId > 0)                   // ← UPDATE
+            var existing = await _db.SignedDocuments
+                .FirstOrDefaultAsync(x => x.IntakePacketId == intakePacketId);
+
+            if (existing != null)
             {
-                if (existing == null) return;
-
                 existing.SignedByName = dto.SignedByName;
                 existing.SignedByRole = dto.SignedByRole;
-                existing.Representative = dto.Representative;
-                existing.SignedAt = dto.SignedAt;
+                existing.RepresentativeAuthority = dto.RepresentativeAuthority;
+                existing.SignedAt = DateTime.UtcNow;
                 existing.SignatureCaptured = dto.SignatureCaptured;
                 existing.Notes = dto.Notes;
                 existing.DocumentVersionId = dto.DocumentVersionId;
+                
+
+                return existing.SignedDocumentId;
             }
-            else                                            // ← INSERT
+            else
             {
-                _db.SignedDocuments.Add(new SignedDocument
+                var entity = new SignedDocument
                 {
-                    IntakePacketId = dto.IntakePacketId,
+                    IntakePacketId = intakePacketId,
                     DocumentTypeId = dto.DocumentTypeId,
                     SignedByName = dto.SignedByName,
                     SignedByRole = dto.SignedByRole,
-                    Representative = dto.Representative,
-                    SignedAt = dto.SignedAt,
+                    RepresentativeAuthority = dto.RepresentativeAuthority,
+                    SignedAt = DateTime.UtcNow,
                     SignatureCaptured = dto.SignatureCaptured,
                     Notes = dto.Notes,
-                    DocumentVersionId = dto.DocumentVersionId
-                });
-            }
+                    DocumentVersionId = dto.DocumentVersionId,
+                    
+                };
 
-            await _db.SaveChangesAsync();
+                _db.SignedDocuments.Add(entity);
+
+                return entity.SignedDocumentId;
+            }
         }
 
 
-        // ── SIGNED DOCUMENT RESPONSES ─────────────────────────────────────────
-        //private async Task UpsertSignedDocumentResponsesAsync(int signedDocumentId, List<SignedDocumentResponse> responses)
-        //{
-        //    foreach (var dto in responses)
-        //    {
-        //        if (dto.ResponseId > 0)                     // ← UPDATE
-        //        {
-        //            var existing = await _db.SignedDocuments.FindAsync(dto.ResponseId);
-        //            if (existing == null) continue;
-
-        //            existing.QuestionCode = dto.QuestionCode;
-        //            existing.ResponseType = dto.ResponseType;
-        //            existing.BoolValue = dto.BoolValue;
-        //            existing.TextValue = dto.TextValue;
-        //            existing.DateValue = dto.DateValue;
-        //            existing.ChoiceValue = dto.ChoiceValue;
-        //        }
-        //        else                                        // ← INSERT
-        //        {
-        //            _db.SignedDocumentResponses.Add(new SignedDocumentResponse
-        //            {
-        //                SignedDocumentId = signedDocumentId,
-        //                QuestionCode = dto.QuestionCode,
-        //                ResponseType = dto.ResponseType,
-        //                BoolValue = dto.BoolValue,
-        //                TextValue = dto.TextValue,
-        //                DateValue = dto.DateValue,
-        //                ChoiceValue = dto.ChoiceValue
-        //            });
-        //        }
-        //    }
-
-        //    await _db.SaveChangesAsync();
-        //}
+        private async Task UpsertSignedDocumentResponsesAsync(int signedDocumentId, List<SignedDocumentResponse> responses)
+        {
+            foreach (var dto in responses)
+            {
+                _db.SignedDocumentResponse.Add(new SignedDocumentResponse
+                {
+                    SignedDocumentId = signedDocumentId,
+                    QuestionCode = dto.QuestionCode,
+                    ResponseType = dto.ResponseType,
+                    BoolValue = dto.BoolValue,
+                    TextValue = dto.TextValue,
+                    DateValue = dto.DateValue,
+                    ChoiceValue = dto.ChoiceValue
+                });
+            }
+        }
 
 
         // ── UNABLE TO OBTAIN SIGNATURE ────────────────────────────────────────
@@ -554,7 +562,6 @@ namespace FormAutomationApi.Controllers
                 });
             }
 
-            await _db.SaveChangesAsync();
         }
 
 

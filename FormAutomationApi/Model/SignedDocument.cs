@@ -12,7 +12,7 @@ public class SignedDocument
 
     public string? SignedByRole { get; set; }           // VARCHAR(40), NULL
 
-    public string? Representative { get; set; }         // VARCHAR(200), NULL (Representativ...)
+    public string? RepresentativeAuthority { get; set; }         // VARCHAR(200), NULL (Representativ...)
 
     public DateTime? SignedAt { get; set; }             // DATETIME, NULL
 
