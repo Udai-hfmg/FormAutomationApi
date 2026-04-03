@@ -7,14 +7,14 @@ namespace FormAutomationApi.Model
     {
         public int IntakePacketId { get; set; }
 
-        public int PatientId { get; set; }
-        public DateTime PacketDate {get;set;}
+        public int? PatientId { get; set; }
+        public DateTime? PacketDate {get;set;}
 
-        public string LocationName {  get; set; }
+        public string? LocationName {  get; set; }
 
-        public DateTime CreatedAt { get; set; }
+        public DateTime? CreatedAt { get; set; }
 
-        public int OfficeId {  get; set; }
+        public int? OfficeId {  get; set; }
 
 
     }

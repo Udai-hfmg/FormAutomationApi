@@ -25,5 +25,13 @@ namespace FormAutomationApi.DTOs
         public List<HipaaFamilyMember>? HipaaFamilyMembers { get; set; }
         public List<SignedDocumentResponse>? SignedDocumentResponses { get; set; }
         //public FormSubmission? FormSubmission { get; set; }
+
+        public PatientSignatureDTO? PatientSignature { get; set; }
+    }
+
+    public class UploadSignatureRequest
+    {
+        public int PatientId { get; set; }
+        public IFormFile File { get; set; }
     }
 }
