@@ -4,7 +4,7 @@
 
     public int PatientId { get; set; }                  // INT, FK to Patient, Not Null
 
-    public string PharmacyName { get; set; }            // VARCHAR(120), Not Null, No default
+    public string? PharmacyName { get; set; }            // VARCHAR(120), Not Null, No default
 
     public string? Location { get; set; }               // VARCHAR(120), NULL
 

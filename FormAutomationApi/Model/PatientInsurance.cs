@@ -10,7 +10,7 @@ public class PatientInsurance
 
     public int? InsurancePlanId { get; set; }           // INT, FK to InsurancePlan, NULL
 
-    public string CoverageType { get; set; }            // VARCHAR(20), Not Null, No default
+    public string? CoverageType { get; set; }            // VARCHAR(20), Not Null, No default
 
     public string? MemberId { get; set; }               // VARCHAR(60), NULL
 

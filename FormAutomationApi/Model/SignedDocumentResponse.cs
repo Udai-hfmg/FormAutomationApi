@@ -10,9 +10,9 @@ public class SignedDocumentResponse
     [ForeignKey("SignedDocumentId")]
     public int SignedDocumentId { get; set; }           // INT, FK to SignedDocument, Not Null
 
-    public string QuestionCode { get; set; }            // VARCHAR(80), Not Null, No default
+    public string? QuestionCode { get; set; }            // VARCHAR(80), Not Null, No default
 
-    public string ResponseType { get; set; }            // VARCHAR(20), Not Null, No default
+    public string? ResponseType { get; set; }            // VARCHAR(20), Not Null, No default
 
     public bool? BoolValue { get; set; }                // TINYINT(1), NULL
 

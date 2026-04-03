@@ -27,8 +27,10 @@ namespace FormAutomationApi.Controllers
             var patientid = patient?.PatientId;
             
             var emergency = await _db.EmergencyContacts.FirstOrDefaultAsync(p => p.PatientId == patientid);
+
+ 
             
-            var hippa = await _db.HipaaFamilyMembers
+            var hipaa = await _db.HipaaFamilyMembers
      .Where(p => p.HipaaFamilyMemberId == patientid)
      .ToListAsync();
 
@@ -69,7 +71,8 @@ namespace FormAutomationApi.Controllers
 
             var unableToObtain = await _db.UnableToObtainSignatures.FirstOrDefaultAsync(p => p.SignedDocumentId == signedDocumentId);
 
-         
+          var signature =await _db.PatientSignatures.FirstOrDefaultAsync(p=>p.PatientId == patientid);
+
             if (patient == null)
                 return NotFound();
             var obj = new
@@ -77,7 +80,7 @@ namespace FormAutomationApi.Controllers
                 patient,
                 emergency,
                 insurance,
-                hippa,
+                hipaa,
                 pharmacy,
                 demographics,
                 employer,
@@ -88,12 +91,51 @@ namespace FormAutomationApi.Controllers
                 patientoffice,
                 office,
                 patientProvider,
-                unableToObtain
+                unableToObtain,
+                signature
 
 
             };
             return Ok(obj);
 
+        }
+
+        [HttpPost("upload-signature")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadSignature([FromForm] UploadSignatureRequest request)
+        {
+            if (request.File == null || request.File.Length == 0)
+                return BadRequest("No file");
+
+            using var ms = new MemoryStream();
+            await request.File.CopyToAsync(ms);
+
+            var bytes = ms.ToArray();
+
+            var existing = await _db.PatientSignatures
+                .FirstOrDefaultAsync(x => x.PatientId == request.PatientId);
+
+            if (existing != null)
+            {
+                existing.SignatureData = bytes;
+                existing.FileType = request.File.ContentType;
+                existing.SignedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                _db.PatientSignatures.Add(new PatientSignature
+                {
+                    PatientId = request.PatientId,
+                    SignatureData = bytes,
+                    FileType = request.File.ContentType,
+                    SignedAt = DateTime.UtcNow,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            await _db.SaveChangesAsync();
+
+            return Ok(new { success = true });
         }
 
 
@@ -611,7 +653,7 @@ namespace FormAutomationApi.Controllers
             }
 
         }
-
+   
 
         // ── FORM SUBMISSION ───────────────────────────────────────────────────
         //private async Task UpsertFormSubmissionAsync(int patientId, FormSubmission? dto)
@@ -643,4 +685,7 @@ namespace FormAutomationApi.Controllers
         //    await _db.SaveChangesAsync();
         //}
     }
+
+
 }
+

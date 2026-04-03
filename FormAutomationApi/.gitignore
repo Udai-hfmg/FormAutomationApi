@@ -12,6 +12,8 @@ obj/
 
 # Environment files
 appsettings.Development.json
+appsettings.json
+appsettings.*.json
 .env
 
 # OS files
