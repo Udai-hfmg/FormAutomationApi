@@ -33,69 +33,143 @@ namespace FormAutomationApi.Controllers
             var demographics = await _db.PatientDemographics
                 .FirstOrDefaultAsync(d => d.PatientId == patientId);
 
-            //pharmacy
-            var pharmacy = await _db.PatientPharmacies.FirstOrDefaultAsync(p => p.PatientId == patientid);
+            // PatientEmployment: PK = PatientEmploymentId, FK = PatientId
+            var employer = await _db.PatientEmployments
+                .FirstOrDefaultAsync(e => e.PatientId == patientId);
 
-            //demographics
-            var demographics = await _db.PatientDemographics.FirstOrDefaultAsync(p => p.PatientId == patientid);
+            // EmergencyContact: PK = EmergencyContactId, FK = PatientId
+            var emergency = await _db.EmergencyContacts
+                .FirstOrDefaultAsync(e => e.PatientId == patientId);
 
-            //employer
-            var employer = await _db.PatientEmployments.FirstOrDefaultAsync(p => p.PatientEmploymentId == patientid);
+            // PatientPharmacy: PK = PatientPharmacyId, FK = PatientId
+            var pharmacy = await _db.PatientPharmacies
+                .FirstOrDefaultAsync(p => p.PatientId == patientId);
 
+            // PatientInsurance: PK = PatientInsuranceId, FK = PatientId + InsurancePlanId
+            var patientInsurance = await _db.PatientInsurances
+                .FirstOrDefaultAsync(p => p.PatientId == patientId);
 
-            //patientinsurance
-            var patientInsurance = await _db.PatientInsurances.FirstOrDefaultAsync(p => p.PatientId == patientid);
+            // InsurancePlan: PK = InsurancePlanId
+            InsurancePlan? insurance = null;
+            if (patientInsurance?.InsurancePlanId != null)
+            {
+                insurance = await _db.InsurancePlans
+                    .FirstOrDefaultAsync(p => p.InsurancePlanId == patientInsurance.InsurancePlanId);
+            }
 
-            var insurancePlanId = patientInsurance?.InsurancePlanId;
+            // PatientOffice: PK = PatientOfficeId, FK = PatientId + OfficeId
+            var patientOffice = await _db.PatientOffices
+                .FirstOrDefaultAsync(p => p.PatientId == patientId);
 
-            var insurance = await _db.InsurancePlans.FirstOrDefaultAsync(p => p.InsurancePlanId == insurancePlanId);
+            // Office: PK = OfficeId
+            Office? office = null;
+            if (patientOffice?.OfficeId != null)
+            {
+                office = await _db.Offices
+                    .FirstOrDefaultAsync(o => o.OfficeId == patientOffice.OfficeId);
+            }
 
-            var intakePacket = await _db.IntakePackets.FirstOrDefaultAsync(p => p.PatientId == patientid);
+            // PatientProvider: PK = PatientProviderId, FK = PatientId
+            var patientProvider = await _db.patientProviders
+                .FirstOrDefaultAsync(p => p.PatientId == patientId);
 
-            var intakePacketId = intakePacket?.IntakePacketId;
+            // IntakePacket: PK = IntakePacketId, FK = PatientId + OfficeId
+            var intakePacket = await _db.IntakePackets
+                .FirstOrDefaultAsync(p => p.PatientId == patientId);
 
-            var signedDocuments = await _db.SignedDocuments.FirstOrDefaultAsync(p => p.IntakePacketId == intakePacketId);
+            // Everything below depends on having a SignedDocument
+            SignedDocument? signedDocuments = null;
+            List<SignedDocumentResponse> signedDocumentResponse = new();
+            List<HipaaFamilyMember> hipaa = new();
+            UnableToObtainSignature? unableToObtainSignature = null;
 
-            var signedDocumentId = signedDocuments.SignedDocumentId;
+            if (intakePacket != null)
+            {
+                // SignedDocument: PK = SignedDocumentId, FK = IntakePacketId + DocumentTypeId
+                signedDocuments = await _db.SignedDocuments
+                    .FirstOrDefaultAsync(s => s.IntakePacketId == intakePacket.IntakePacketId);
 
-            var signedDocumentResponse = await _db.SignedDocumentResponse.Where(p => p.SignedDocumentId == signedDocumentId).ToListAsync();
+                if (signedDocuments != null)
+                {
+                    var signedDocumentId = signedDocuments.SignedDocumentId;
 
-            var patientoffice = await _db.PatientOffices.FirstOrDefaultAsync(p => p.PatientId == patientid);
+                    // SignedDocumentResponse: PK = ResponseId, FK = SignedDocumentId
+                    signedDocumentResponse = await _db.SignedDocumentResponse
+                        .Where(r => r.SignedDocumentId == signedDocumentId)
+                        .ToListAsync();
 
-            var officeid = patientoffice.OfficeId;
+                    // HipaaFamilyMember: PK = HipaaFamilyMemberId, FK = SignedDocumentId
+                    // IMPORTANT: No PatientId column on this table
+                    hipaa = await _db.HipaaFamilyMembers
+                        .Where(h => h.SignedDocumentId == signedDocumentId)
+                        .ToListAsync();
 
-            var office = await _db.Offices.FirstOrDefaultAsync(p => p.OfficeId == officeid);
+                    // UnableToObtainSignature: PK = UnableId, FK = SignedDocumentId
+                    unableToObtainSignature = await _db.UnableToObtainSignatures
+                        .FirstOrDefaultAsync(u => u.SignedDocumentId == signedDocumentId);
+                }
+            }
 
-            var patientProvider = await _db.patientProviders.FirstOrDefaultAsync(p => p.PatientId == patientid);
+            // PatientSignature: PK = PatientSignatureId, FK = PatientId
+            var signature = await _db.PatientSignatures
+                .FirstOrDefaultAsync(s => s.PatientId == patientId);
 
-            var unableToObtain = await _db.UnableToObtainSignatures.FirstOrDefaultAsync(p => p.SignedDocumentId == signedDocumentId);
-
-         
-            if (patient == null)
-                return NotFound();
-            var obj = new
+            return Ok(new
             {
                 patient,
-                emergency,
-                insurance,
-                hippa,
-                pharmacy,
                 demographics,
                 employer,
+                emergency,
+                pharmacy,
                 patientInsurance,
+                insurance,
+                patientOffice,
+                office,
+                patientProvider,
                 intakePacket,
                 signedDocuments,
                 signedDocumentResponse,
-                patientoffice,
-                office,
-                patientProvider,
-                unableToObtain
-
-
-            };
-            return Ok(obj);
-
+                hipaa,
+                unableToObtainSignature,
+                signature
+            });
         }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // POST /api/Patient/upload-signature
+        // ─────────────────────────────────────────────────────────────────────
+        [HttpPost("upload-signature")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadSignature([FromForm] UploadSignatureRequest request)
+        {
+            if (request.File == null || request.File.Length == 0)
+                return BadRequest("No file provided.");
+
+            using var ms = new MemoryStream();
+            await request.File.CopyToAsync(ms);
+            var bytes = ms.ToArray();
+
+            // PatientSignature: PK = PatientSignatureId, FK = PatientId
+            var existing = await _db.PatientSignatures
+                .FirstOrDefaultAsync(x => x.PatientId == request.PatientId);
+
+            if (existing != null)
+            {
+                existing.SignatureData = bytes;
+                existing.FileType = request.File.ContentType;
+                existing.SignedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                _db.PatientSignatures.Add(new PatientSignature
+                {
+                    PatientId = request.PatientId,
+                    SignatureData = bytes,
+                    FileType = request.File.ContentType,
+                    SignedAt = DateTime.UtcNow,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
 
             await _db.SaveChangesAsync();
             return Ok(new { success = true });
@@ -160,14 +234,6 @@ namespace FormAutomationApi.Controllers
                     detail = ex.InnerException?.InnerException?.Message
                 });
             }
-        }
-
-        [HttpPut("update/{sessionId}")]
-        public async Task<IActionResult> Update(Guid sessionId, [FromBody] RequestFormSubmission request)
-        {
-            if (request == null)
-                return BadRequest("Request body is required.");
-            return NoContent();
         }
 
         // ─────────────────────────────────────────────────────────────────────
