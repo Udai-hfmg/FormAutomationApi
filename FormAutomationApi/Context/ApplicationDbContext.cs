@@ -45,6 +45,8 @@ namespace FormAutomationApi.Context
         public DbSet<PatientInsurance> PatientInsurances { get; set; }
 
         public DbSet<FormSubmission> FormSubmissions { get; set; }
+
+        public DbSet<PatientSignature> PatientSignatures { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Patient>().ToTable("patient");
@@ -84,6 +86,8 @@ namespace FormAutomationApi.Context
             modelBuilder.Entity<UnableToObtainSignature>().ToTable("unabletoobtainsignature");
 
             modelBuilder.Entity<FormSubmission>().ToTable("formsubmissions");
+
+            modelBuilder.Entity<PatientSignature>().ToTable("patientsignature");
         }
     }
 }

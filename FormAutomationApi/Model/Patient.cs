@@ -56,9 +56,14 @@ public class Patient
     [StringLength(4)]
     public string? SSN_Last4 { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+    public DateTime? CreatedAt { get; set; }
 
-    public DateTime UpdatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+
+    [StringLength(4)]
+    public string? Initials { get; set; }
+
+    public string? Apt { get; set; }
 
 
     

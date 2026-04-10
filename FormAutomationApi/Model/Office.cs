@@ -1,8 +1,8 @@
 ﻿public class Office
 {
-    public int OfficeId { get; set; }                    // INT, AUTO_INCREMENT, PK
+    public int? OfficeId { get; set; }                    // INT, AUTO_INCREMENT, PK
 
-    public string OfficeName { get; set; }               // VARCHAR(120), NOT NULL
+    public string? OfficeName { get; set; }               // VARCHAR(120), NOT NULL
 
     public string? Phone { get; set; }                   // VARCHAR(25), NULL
 
