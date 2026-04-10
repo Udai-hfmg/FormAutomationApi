@@ -18,82 +18,97 @@ namespace FormAutomationApi.Controllers
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetPatient(int id)
-
         {
-
-            var patient = await _db.Patients.FirstOrDefaultAsync(p => p.PatientId == id);
-
-            if (patient == null) return NotFound();
-            var patientid = patient?.PatientId;
-            
-            var emergency = await _db.EmergencyContacts.FirstOrDefaultAsync(p => p.PatientId == patientid);
-            
-            var hippa = await _db.HipaaFamilyMembers
-     .Where(p => p.HipaaFamilyMemberId == patientid)
-     .ToListAsync();
-
-            //pharmacy
-            var pharmacy = await _db.PatientPharmacies.FirstOrDefaultAsync(p => p.PatientId == patientid);
-
-            //demographics
-            var demographics = await _db.PatientDemographics.FirstOrDefaultAsync(p => p.PatientId == patientid);
-
-            //employer
-            var employer = await _db.PatientEmployments.FirstOrDefaultAsync(p => p.PatientEmploymentId == patientid);
-
-
-            //patientinsurance
-            var patientInsurance = await _db.PatientInsurances.FirstOrDefaultAsync(p => p.PatientId == patientid);
-
-            var insurancePlanId = patientInsurance?.InsurancePlanId;
-
-            var insurance = await _db.InsurancePlans.FirstOrDefaultAsync(p => p.InsurancePlanId == insurancePlanId);
-
-            var intakePacket = await _db.IntakePackets.FirstOrDefaultAsync(p => p.PatientId == patientid);
-
-            var intakePacketId = intakePacket?.IntakePacketId;
-
-            var signedDocuments = await _db.SignedDocuments.FirstOrDefaultAsync(p => p.IntakePacketId == intakePacketId);
-
-            var signedDocumentId = signedDocuments.SignedDocumentId;
-
-            var signedDocumentResponse = await _db.SignedDocumentResponse.Where(p => p.SignedDocumentId == signedDocumentId).ToListAsync();
-
-            var patientoffice = await _db.PatientOffices.FirstOrDefaultAsync(p => p.PatientId == patientid);
-
-            var officeid = patientoffice.OfficeId;
-
-            var office = await _db.Offices.FirstOrDefaultAsync(p => p.OfficeId == officeid);
-
-            var patientProvider = await _db.patientProviders.FirstOrDefaultAsync(p => p.PatientId == patientid);
-
-            var unableToObtain = await _db.UnableToObtainSignatures.FirstOrDefaultAsync(p => p.SignedDocumentId == signedDocumentId);
-
-         
-            if (patient == null)
-                return NotFound();
-            var obj = new
+            try
             {
-                patient,
-                emergency,
-                insurance,
-                hippa,
-                pharmacy,
-                demographics,
-                employer,
-                patientInsurance,
-                intakePacket,
-                signedDocuments,
-                signedDocumentResponse,
-                patientoffice,
-                office,
-                patientProvider,
-                unableToObtain
+                // ── Patient is the only hard requirement ──────────────────────────────
+                var patient = await _db.Patients.FirstOrDefaultAsync(p => p.PatientId == id);
+                if (patient == null) return NotFound(new { message = $"Patient {id} not found" });
 
+                var patientId = patient.PatientId;
 
-            };
-            return Ok(obj);
+                var emergency = await _db.EmergencyContacts
+                                       .FirstOrDefaultAsync(p => p.PatientId == patientId);
 
+                var hipaa = await _db.HipaaFamilyMembers
+                                       .Where(p => p.HipaaFamilyMemberId == patientId)
+                                       .ToListAsync();
+
+                var pharmacy = await _db.PatientPharmacies
+                                       .FirstOrDefaultAsync(p => p.PatientId == patientId);
+
+                var demographics = await _db.PatientDemographics
+                                       .FirstOrDefaultAsync(p => p.PatientId == patientId);
+
+                var employer = await _db.PatientEmployments
+                                       .FirstOrDefaultAsync(p => p.PatientId == patientId);
+
+                var patientInsurance = await _db.PatientInsurances
+                                           .FirstOrDefaultAsync(p => p.PatientId == patientId);
+
+                var insurance = patientInsurance != null
+                                   ? await _db.InsurancePlans
+                                         .FirstOrDefaultAsync(p => p.InsurancePlanId == patientInsurance.InsurancePlanId)
+                                   : null;
+
+                var intakePacket = await _db.IntakePackets
+                                       .FirstOrDefaultAsync(p => p.PatientId == patientId);
+
+                var signedDocument = intakePacket != null
+                                     ? await _db.SignedDocuments
+                                           .FirstOrDefaultAsync(p => p.IntakePacketId == intakePacket.IntakePacketId)
+                                     : null;
+
+                var signedDocumentResponses = signedDocument != null
+                                              ? await _db.SignedDocumentResponse
+                                                    .Where(p => p.SignedDocumentId == signedDocument.SignedDocumentId)
+                                                    .ToListAsync()
+                                              : new List<SignedDocumentResponse>();
+
+                var unableToObtain = signedDocument != null
+                                     ? await _db.UnableToObtainSignatures
+                                           .FirstOrDefaultAsync(p => p.SignedDocumentId == signedDocument.SignedDocumentId)
+                                     : null;
+
+                var patientOffice = await _db.PatientOffices
+                                        .FirstOrDefaultAsync(p => p.PatientId == patientId);
+
+                var office = patientOffice != null
+                                    ? await _db.Offices
+                                          .FirstOrDefaultAsync(p => p.OfficeId == patientOffice.OfficeId)
+                                    : null;
+
+                var patientProvider = await _db.patientProviders
+                                          .FirstOrDefaultAsync(p => p.PatientId == patientId);
+
+                return Ok(new
+                {
+                    patient,
+                    emergency,
+                    hipaa,
+                    pharmacy,
+                    demographics,
+                    employer,
+                    patientInsurance,
+                    insurance,
+                    intakePacket,
+                    signedDocument,
+                    signedDocumentResponses,
+                    unableToObtain,
+                    patientOffice,
+                    office,
+                    patientProvider,
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "An error occurred while fetching patient data",
+                    error = ex.Message,
+                    inner = ex.InnerException?.Message
+                });
+            }
         }
 
 
@@ -154,6 +169,14 @@ namespace FormAutomationApi.Controllers
                     detail = ex.InnerException?.InnerException?.Message
                 });
             }
+        }
+
+        [HttpPut("update/{sessionId}")]
+        public async Task<IActionResult> Update(Guid sessionId, [FromBody] RequestFormSubmission request)
+        {
+            if (request == null)
+                return BadRequest("Request body is required.");
+            return NoContent();
         }
 
 

@@ -29,8 +29,16 @@ namespace FormAutomationApi.Controllers
         [HttpGet]
         public async Task<IActionResult> Get()
         {
+            try
+            {
             var allfacilities = await _context.Offices.ToListAsync();
+
             return Ok(allfacilities);
+
+            }catch (Exception ex) {
+                return StatusCode(500, new { message = "Error sending SMS", error = ex.Message });
+
+            }
 
         }
 
@@ -80,15 +88,25 @@ namespace FormAutomationApi.Controllers
         public async Task<IActionResult> GetSessions()
         {
             // Logic to retrieve sessions from the database
-            var sessions = await _context.FormSubmissions.ToListAsync();
-
-            var expiredSessions = sessions.Where(s => s.ExpiresAt < DateTime.Now && s.Status != SubmissionStatus.Completed).ToList();
-            if (expiredSessions.Any())
+            try
             {
-                expiredSessions.ForEach(s=>s.Status = SubmissionStatus.Expired);
-                await _context.SaveChangesAsync();
+
+
+                var sessions = await _context.FormSubmissions.ToListAsync();
+
+                var expiredSessions = sessions.Where(s => s.ExpiresAt < DateTime.Now && s.Status != SubmissionStatus.Completed).ToList();
+                if (expiredSessions.Any())
+                {
+                    expiredSessions.ForEach(s => s.Status = SubmissionStatus.Expired);
+                    await _context.SaveChangesAsync();
+                }
+                return Ok(sessions);
+
             }
-            return Ok(sessions);
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error retrieving sessions", error = ex.Message });
+            }
         }
 
         [HttpGet("get-session/{sessionId}")]
