@@ -183,13 +183,14 @@ namespace FormAutomationApi.Controllers
         {
             if (request == null)
                 return BadRequest("Request body is required.");
+            
 
             using var transaction = await _db.Database.BeginTransactionAsync();
 
             try
             {
                 // Step 1: Patient — must be first (all other tables FK to patientId)
-                var patientId = await UpsertPatientAsync(request.Patient);
+                var patientId = await UpsertPatientAsync(request.Patient , request.SessionId);
 
                 // Step 2: Independent child tables — all keyed by PatientId
                 await UpsertDemographicAsync(patientId, request.PatientDemographic);
@@ -245,7 +246,7 @@ namespace FormAutomationApi.Controllers
         //         DateOfBirth, Sex, MaritalStatus, SSN_Last4, SSN_Encrypted,
         //         Email, PhonePrimary, PhoneAlternate, AddressLine1, AddressLine2,
         //         City, State, ZipCode, CreatedAt, UpdatedAt, initials, apt
-        private async Task<int> UpsertPatientAsync(Patient dto)
+        private async Task<int> UpsertPatientAsync(Patient dto , Guid sessionId)
         {
             if (dto == null) throw new Exception("Patient data is required.");
 
@@ -303,6 +304,11 @@ namespace FormAutomationApi.Controllers
                 };
 
                 _db.Patients.Add(entity);
+                _db.FormSubmissions.Update(new FormSubmission
+                {
+                    SessionId = sessionId,
+                    PatientId = entity.PatientId,
+                });
                 await _db.SaveChangesAsync(); // Must save to get AUTO_INCREMENT PatientId
                 return entity.PatientId;
             }
@@ -334,6 +340,8 @@ namespace FormAutomationApi.Controllers
                     Ethnicity = dto.Ethnicity,
                     UpdatedAt = DateTime.UtcNow
                 });
+
+                
             }
         }
 

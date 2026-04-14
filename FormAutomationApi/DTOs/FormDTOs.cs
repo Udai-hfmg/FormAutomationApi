@@ -11,6 +11,7 @@ namespace FormAutomationApi.DTOs
 
     public class RequestFormSubmission
     {
+        public Guid SessionId { get; set; } = Guid.NewGuid();
         public Patient Patient { get; set; }
         public PatientDemographic? PatientDemographic { get; set; }
         public PatientEmployment? PatientEmployment { get; set; }
