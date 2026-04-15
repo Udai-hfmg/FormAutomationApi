@@ -220,6 +220,14 @@ namespace FormAutomationApi.Controllers
                 if (request.UnableToObtainSignature != null)
                     await UpsertUnableToObtainSignatureAsync(signedDocumentId, request.UnableToObtainSignature);
 
+                var submission = await _db.FormSubmissions
+                    .FirstOrDefaultAsync(x => x.SessionId == request.SessionId);
+
+                if (submission != null)
+                {
+                    submission.Status = SubmissionStatus.Completed;
+                }
+
                 await _db.SaveChangesAsync();
                 await transaction.CommitAsync();
 
@@ -311,7 +319,7 @@ namespace FormAutomationApi.Controllers
 
                 if (submission != null)
                 {
-                    submission.PatientId = entity.PatientId; // ✅ correct value now
+                    submission.PatientId = entity.PatientId;
                     await _db.SaveChangesAsync();
                 }
 
