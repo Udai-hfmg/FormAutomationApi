@@ -3,6 +3,7 @@
 using FormAutomationApi.Context;
 using FormAutomationApi.DTOs;
 using FormAutomationApi.Model;
+using FormAutomationApi.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,7 +14,11 @@ namespace FormAutomationApi.Controllers
     public class PatientController : ControllerBase
     {
         private readonly ApplicationDbContext _db;
-        public PatientController(ApplicationDbContext db) => _db = db;
+        private readonly IPatientService _patientService ;
+        public PatientController(ApplicationDbContext db, IPatientService patientService) { 
+            _db = db; 
+            _patientService = patientService;
+        }
 
         // ─────────────────────────────────────────────────────────────────────
         // GET /api/Patient/{id}
@@ -135,6 +140,12 @@ namespace FormAutomationApi.Controllers
             });
         }
 
+        [HttpGet("search/{id}")]
+        public async Task<IActionResult> getPatientDetails(string id)
+        {
+            var patients = await _patientService.SearchPatients(id);
+            return Ok(patients);
+        }
         // ─────────────────────────────────────────────────────────────────────
         // POST /api/Patient/upload-signature
         // ─────────────────────────────────────────────────────────────────────
@@ -219,6 +230,14 @@ namespace FormAutomationApi.Controllers
                 // Step 7: UnableToObtainSignature — keyed by signedDocumentId
                 if (request.UnableToObtainSignature != null)
                     await UpsertUnableToObtainSignatureAsync(signedDocumentId, request.UnableToObtainSignature);
+
+                var submission = await _db.FormSubmissions
+                    .FirstOrDefaultAsync(x => x.SessionId == request.SessionId);
+
+                if (submission != null)
+                {
+                    submission.Status = SubmissionStatus.Completed;
+                }
 
                 await _db.SaveChangesAsync();
                 await transaction.CommitAsync();
@@ -311,7 +330,7 @@ namespace FormAutomationApi.Controllers
 
                 if (submission != null)
                 {
-                    submission.PatientId = entity.PatientId; // ✅ correct value now
+                    submission.PatientId = entity.PatientId;
                     await _db.SaveChangesAsync();
                 }
 

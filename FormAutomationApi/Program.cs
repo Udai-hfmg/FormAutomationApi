@@ -47,6 +47,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 );
 builder.Services.AddScoped<AiService>();
 builder.Services.AddScoped<ITokenService, JWTTokenService>();
+builder.Services.AddScoped<IPatientService , PatientService>();
+builder.Services.AddScoped<IFacilityService , FacilityService>();
 builder.Services.AddControllers().AddJsonOptions(opts =>
 {
     opts.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
