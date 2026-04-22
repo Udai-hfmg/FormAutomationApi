@@ -3,6 +3,7 @@
 using FormAutomationApi.Context;
 using FormAutomationApi.DTOs;
 using FormAutomationApi.Model;
+using FormAutomationApi.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,7 +14,11 @@ namespace FormAutomationApi.Controllers
     public class PatientController : ControllerBase
     {
         private readonly ApplicationDbContext _db;
-        public PatientController(ApplicationDbContext db) => _db = db;
+        private readonly IPatientService _patientService ;
+        public PatientController(ApplicationDbContext db, IPatientService patientService) { 
+            _db = db; 
+            _patientService = patientService;
+        }
 
         // ─────────────────────────────────────────────────────────────────────
         // GET /api/Patient/{id}
@@ -135,6 +140,12 @@ namespace FormAutomationApi.Controllers
             });
         }
 
+        [HttpGet("search/{id}")]
+        public async Task<IActionResult> getPatientDetails(string id)
+        {
+            var patients = await _patientService.SearchPatients(id);
+            return Ok(patients);
+        }
         // ─────────────────────────────────────────────────────────────────────
         // POST /api/Patient/upload-signature
         // ─────────────────────────────────────────────────────────────────────
