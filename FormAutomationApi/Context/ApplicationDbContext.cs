@@ -50,7 +50,7 @@ namespace FormAutomationApi.Context
 
         public DbSet<DocumentVersionOffice> DocumentVersionOffices { get; set; }
 
-        public DbSet<ArchiveForm> Forms { get; set; }
+        public DbSet<ArchiveForm> ArchiveForms { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -96,7 +96,7 @@ namespace FormAutomationApi.Context
 
             modelBuilder.Entity<DocumentVersionOffice>().ToTable("documentversionoffice");
 
-            modelBuilder.Entity<ArchiveForm>().ToTable("Forms");
+            modelBuilder.Entity<ArchiveForm>().ToTable("archiveforms");
 
         }
     }
